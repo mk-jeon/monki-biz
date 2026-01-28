@@ -12,31 +12,35 @@
 - ✅ 권한 기반 접근 제어
 - ✅ 반응형 대시보드 UI
 - ✅ 사이드바 네비게이션
-- ✅ 데이터베이스 스키마 (D1)
+- ✅ 데이터베이스 스키마 (D1) - 19개 테이블
 - ✅ 초기 데이터 시딩
+- ✅ 상담현황 API (CRUD, 상태 변경, 계약 이관)
+- ✅ 프론트엔드 유틸리티 (kalban.js, common.js)
 
 🚧 **개발 중인 기능**
-- 🚧 상담현황 칸반보드 (마케팅 → 영업 프로세스)
-- 🚧 계약현황 칸반보드 (계약 진행 프로세스)
-- 🚧 설치현황 칸반보드 (설치 진행 프로세스)
-- 🚧 운영등재 칸반보드 (최종 등재 프로세스)
+- 🚧 상담현황 칸반보드 페이지 (50%)
+- 🚧 계약현황 칸반보드
+- 🚧 설치현황 칸반보드
+- 🚧 운영등재 칸반보드
 - 🚧 가맹점현황 리스트 페이지
-- 🚧 재고관리 시스템
-- 🚧 A/S 관리 시스템
-- 🚧 대시보드 통계 기능
 
 📋 **예정된 기능**
-- 📋 관리자 시스템 메뉴 (사용자/페이지/로케이션/아이템/회사정보 관리)
+- 📋 재고관리 시스템 (재고현황/재고요청/대여현황)
+- 📋 A/S 관리 시스템 (인바운드/방문A/S/대시보드)
+- 📋 정산 시스템 (CMS/CRM/Ai매출업 정산)
+- 📋 관리자 시스템 메뉴
 - 📋 실시간 알림 시스템
-- 📋 활동 로그 추적
-- 📋 데이터 내보내기/가져오기
-- 📋 드래그앤드롭 칸반보드
+- 📋 드래그앤드롭 칸반보드 (완성도 향상)
 
 ## URLs
 
 ### 개발 환경
 - **로컬**: http://localhost:3000
 - **공개 URL**: https://3000-i18dape7j958kk047f6g6-82b888ba.sandbox.novita.ai
+
+### 프로덕션 배포
+- **배포 가능**: ✅ 예 (Cloudflare Pages)
+- **배포 방법**: [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) 참고
 
 ### 기본 계정
 - **아이디**: `admin`
@@ -51,6 +55,38 @@
 | operation01 | 1234 | 운영 | 사용자 |
 | operation02 | 1234 | 운영 | 사용자 |
 
+## 🌐 배포 방법
+
+### Cloudflare Pages 배포 (무료)
+
+**비용**: **완전 무료** (월 10만 요청, 500MB DB 포함)
+
+```bash
+# 1. 계정 생성 및 로그인
+npx wrangler login
+
+# 2. 프로덕션 DB 생성
+npx wrangler d1 create monki-biz-production
+
+# 3. wrangler.jsonc에 database_id 업데이트
+
+# 4. 마이그레이션 및 시딩
+npx wrangler d1 migrations apply monki-biz-production --remote
+npx wrangler d1 execute monki-biz-production --remote --file=./seed.sql
+
+# 5. 프로젝트 생성
+npx wrangler pages project create monki-biz --production-branch main
+
+# 6. 빌드 및 배포
+npm run build
+npx wrangler pages deploy dist --project-name monki-biz
+
+# 완료! 🎉
+# URL: https://monki-biz.pages.dev
+```
+
+**상세 가이드**: [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+
 ## 데이터 아키텍처
 
 ### 데이터 모델
@@ -62,22 +98,30 @@
 상담(consultations) → 계약(contracts) → 설치(installations) → 가맹점(franchises)
 ```
 
-#### 주요 테이블
+#### 주요 테이블 (19개)
 1. **users** - 사용자 계정 및 권한
-2. **customers** - 고객 정보 (전체 프로세스 추적)
-3. **consultations** - 상담 내역
-4. **contracts** - 계약 정보
-5. **installations** - 설치 내역
-6. **franchises** - 가맹점 현황
-7. **inbound_requests** - 인바운드 A/S 문의
-8. **as_requests** - A/S 처리 현황
-9. **stock_inventory** - 재고 현황
-10. **stock_requests** - 재고 요청
-11. **stock_transactions** - 재고 이동 내역
+2. **permissions** - 권한 관리
+3. **customers** - 고객 정보 (전체 프로세스 추적)
+4. **consultations** - 상담 내역
+5. **contracts** - 계약 정보
+6. **installations** - 설치 내역
+7. **franchises** - 가맹점 현황
+8. **inbound_requests** - 인바운드 A/S 문의
+9. **as_requests** - A/S 처리 현황
+10. **stock_inventory** - 재고 현황
+11. **stock_requests** - 재고 요청
+12. **stock_transactions** - 재고 이동 내역
+13. **locations** - 로케이션 관리
+14. **items** - 아이템 관리
+15. **item_categories** - 아이템 카테고리
+16. **company_info** - 회사 정보
+17. **notifications** - 알림
+18. **activity_logs** - 활동 로그
+19. **기타 지원 테이블**
 
 ### 스토리지 서비스
 - **Cloudflare D1**: SQLite 기반 관계형 데이터베이스 (메인 데이터)
-- **로컬 스토리지**: 개발 환경에서 `.wrangler/state/v3/d1` 사용
+- **로컬 개발**: `.wrangler/state/v3/d1` 자동 생성
 
 ### 데이터 흐름
 ```
@@ -109,8 +153,8 @@
 
 ### 플랫폼
 - **환경**: Cloudflare Pages + Workers
-- **상태**: 🟢 개발 중 (로컬)
-- **프로덕션 배포**: 미정
+- **상태**: 🟢 개발 중 (로컬) / 배포 가능
+- **프로덕션 배포**: Cloudflare Pages (무료)
 
 ### 기술 스택
 - **Backend**: Hono (TypeScript)
@@ -122,6 +166,7 @@
 ### 마지막 업데이트
 - **날짜**: 2026-01-28
 - **버전**: v1.0.0-alpha
+- **진행률**: 약 35% 완료
 
 ## 개발 가이드
 
@@ -135,8 +180,7 @@ npm install
 npm run db:migrate:local
 npm run db:seed
 
-# 개발 서버 시작 (포트 정리 후)
-npm run clean-port
+# 개발 서버 시작
 npm run build
 pm2 start ecosystem.config.cjs
 
@@ -155,7 +199,7 @@ npm run db:migrate:local # 로컬 DB 마이그레이션
 npm run db:seed          # 초기 데이터 삽입
 npm run db:reset         # DB 초기화 (삭제 후 재생성)
 npm run clean-port       # 3000 포트 정리
-npm run test             # 서버 상태 테스트
+npm run deploy           # Cloudflare Pages 배포
 ```
 
 ### 프로젝트 구조
@@ -167,55 +211,48 @@ webapp/
 │   ├── types/              # TypeScript 타입 정의
 │   │   └── index.ts
 │   ├── routes/             # API 라우트
-│   │   └── auth.ts         # 인증 API
+│   │   ├── auth.ts         # 인증 API
+│   │   └── consultations.ts # 상담현황 API
 │   ├── middleware/         # 미들웨어
 │   │   └── auth.ts         # 인증 미들웨어
 │   └── utils/              # 유틸리티
 │       ├── index.ts        # 공통 유틸
 │       └── db.ts           # DB 헬퍼
-├── migrations/             # DB 마이그레이션
-│   └── 0001_initial_schema.sql
 ├── public/                 # 정적 파일
 │   └── static/
+│       ├── js/
+│       │   ├── common.js   # 공통 JS 유틸리티
+│       │   └── kanban.js   # 칸반보드 JS
+│       └── css/
+├── migrations/             # DB 마이그레이션
+│   └── 0001_initial_schema.sql
 ├── .wrangler/              # Wrangler 로컬 상태
 ├── ecosystem.config.cjs    # PM2 설정
 ├── seed.sql                # 초기 데이터
 ├── wrangler.jsonc          # Cloudflare 설정
 ├── package.json            # 프로젝트 설정
-└── README.md               # 이 파일
+├── README.md               # 이 파일
+└── DEPLOYMENT_GUIDE.md     # 배포 가이드
 ```
 
 ## 다음 단계 (권장 개발 순서)
 
 ### Phase 1: 핵심 업무 프로세스 (우선순위: 높음)
-1. ✅ 인증 시스템 구현
-2. 🚧 **상담현황 페이지** - 칸반보드 구현
-   - 상담대기 → 상담중 → 상담완료 상태 관리
-   - 드래그앤드롭으로 상태 변경
-   - 신규 고객 등록 기능
-3. 🚧 **계약현황 페이지** - 칸반보드 구현
-   - 계약대기 → 진행중 → 서명대기 → 완료
-   - 견적서 발행 요청
-4. 🚧 **설치현황 페이지** - 칸반보드 구현
-   - 설치대기 → 진행중 → 완료대기 → 완료
-   - 설치사진/확인서 업로드
-5. 🚧 **운영등재 페이지** - 칸반보드 구현
-   - 등재대기 → 확인중 → 완료
-   - 최종 검증 로직
-6. 🚧 **가맹점현황 페이지** - 리스트/상세보기
-   - 검색 기능
-   - 정보 수정
-   - 우클릭 방지
+1. 🚧 **상담현황 페이지** - 칸반보드 UI 완성 (50% 완료)
+2. 📋 **계약현황 페이지** - 템플릿 복제
+3. 📋 **설치현황 페이지** - 템플릿 복제
+4. 📋 **운영등재 페이지** - 최종 검증
+5. 📋 **가맹점현황 페이지** - 리스트/검색/상세보기
 
 ### Phase 2: 서브 업무 시스템 (우선순위: 중간)
-7. 재고관리 시스템
-8. A/S 관리 시스템
-9. 정산 시스템
+6. 📋 재고관리 시스템 (재고현황/요청/대여현황)
+7. 📋 A/S 관리 시스템 (인바운드/방문A/S/대시보드)
+8. 📋 정산 시스템 (CMS/CRM/Ai매출업)
 
 ### Phase 3: 관리 기능 (우선순위: 낮음)
-10. 관리자 시스템 메뉴
-11. 대시보드 통계
-12. 알림 시스템
+9. 📋 관리자 시스템 메뉴
+10. 📋 대시보드 통계
+11. 📋 실시간 알림 시스템
 
 ## 개발 노트
 
@@ -223,7 +260,7 @@ webapp/
 - ✅ 세션 기반 인증 (메모리 저장)
 - ✅ 효율적인 DB 쿼리 (인덱스 활용)
 - ⏳ 프론트엔드 페이지네이션
-- ⏳ 실시간 데이터 갱신 (WebSocket 고려)
+- ⏳ 실시간 데이터 갱신
 
 ### 보안
 - ✅ HttpOnly 쿠키 사용
@@ -235,8 +272,9 @@ webapp/
 - ✅ 로딩 상태 표시
 - ✅ 에러 메시지 표시
 - ✅ 애니메이션 효과
-- ⏳ 드래그앤드롭 칸반보드
-- ⏳ 실시간 알림
+- ✅ 토스트 알림
+- ✅ 모달 다이얼로그
+- ⏳ 드래그앤드롭 칸반보드 (완성도 향상)
 
 ## 문의 및 지원
 
@@ -244,6 +282,16 @@ webapp/
 - 프로젝트 타입: Cloudflare Pages + Hono
 - 라이선스: Private
 
+## 📚 추가 문서
+
+- **배포 가이드**: [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+- **API 문서**: 개발 중
+- **사용자 매뉴얼**: 개발 중
+
 ---
 
 **MONKi Biz** - 통합 업무 관리를 더 쉽게, 더 효율적으로! 🚀
+
+**현재 진행률**: 약 35% 완료  
+**예상 완성 시간**: 2-3주 (풀타임 개발 기준)  
+**배포 상태**: ✅ 배포 가능 (기본 기능)
