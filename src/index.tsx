@@ -7,6 +7,7 @@ import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/cloudflare-workers';
 import { Env } from './types';
 import authRoutes from './routes/auth';
+import consultationsRoutes from './routes/consultations';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -18,6 +19,7 @@ app.use('/static/*', serveStatic({ root: './public' }));
 
 // API 라우트
 app.route('/api/auth', authRoutes);
+app.route('/api/consultations', consultationsRoutes);
 
 // 메인 페이지 - 로그인 화면
 app.get('/', (c) => {
