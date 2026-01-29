@@ -4,6 +4,7 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { serveStatic } from 'hono/cloudflare-workers';
 import { Env } from './types';
 import authRoutes from './routes/auth';
 import consultationsRoutes from './routes/consultations';
@@ -12,6 +13,9 @@ import installationsRoutes from './routes/installations';
 import franchisesRoutes from './routes/franchises';
 
 const app = new Hono<{ Bindings: Env }>();
+
+// 정적 파일 서빙 (HTML 파일 우선)
+app.get('*.html', serveStatic({ root: './' }));
 
 // CORS 설정
 app.use('/api/*', cors());
@@ -557,6 +561,15 @@ app.get('/dashboard', (c) => {
 </html>
   `);
 });
+
+// HTML 페이지 직접 서빙
+app.get('/consultations.html', serveStatic({ path: './consultations.html' }));
+app.get('/contracts.html', serveStatic({ path: './contracts.html' }));
+app.get('/installations.html', serveStatic({ path: './installations.html' }));
+app.get('/operating.html', serveStatic({ path: './operating.html' }));
+app.get('/franchises.html', serveStatic({ path: './franchises.html' }));
+app.get('/stock.html', serveStatic({ path: './stock.html' }));
+app.get('/as.html', serveStatic({ path: './as.html' }));
 
 export default app;
 
