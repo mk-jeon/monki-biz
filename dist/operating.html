@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>운영등재 - MONKi Biz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .kanban-column { min-width: 300px; background: #f8f9fa; border-radius: 12px; padding: 16px; }
+        .kanban-card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #f97316; }
+        .kanban-container { display: flex; gap: 20px; overflow-x: auto; padding: 20px; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div class="max-w-full mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-store mr-2 text-orange-500"></i> 운영등재
+                    </h1>
+                    <p class="text-sm text-gray-500 mt-1">가맹점 운영 및 관리</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button onclick="window.location.href='/dashboard'" class="text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-home text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="kanbanContainer" class="kanban-container">
+        <div class="text-center py-20 w-full">
+            <i class="fas fa-construction text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-2xl font-bold text-gray-700">운영등재 페이지</h3>
+            <p class="text-gray-500 mt-2">준비 중입니다.</p>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await axios.get('/api/auth/session');
+            } catch (error) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>

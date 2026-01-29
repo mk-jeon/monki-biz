@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>설치현황 - MONKi Biz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .kanban-column { min-width: 300px; max-width: 350px; background: #f8f9fa; border-radius: 12px; padding: 16px; transition: all 0.3s ease; }
+        .kanban-column:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .kanban-card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: grab; transition: all 0.3s ease; border-left: 4px solid #10b981; }
+        .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .kanban-card:active { cursor: grabbing; }
+        .kanban-card.dragging { opacity: 0.5; }
+        .kanban-container { display: flex; gap: 20px; overflow-x: auto; padding: 20px; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #10b981; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div class="max-w-full mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-tools mr-2 text-green-500"></i> 설치현황
+                    </h1>
+                    <p class="text-sm text-gray-500 mt-1">설비 설치 진행 및 관리</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="refreshData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button onclick="window.location.href='/dashboard'" class="text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-home text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="kanbanContainer" class="kanban-container"></div>
+    <div id="loadingSpinner" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        let data = [];
+        const STATUSES = [
+            { id: 'scheduled', name: '설치예정', color: 'yellow', icon: 'fa-calendar' },
+            { id: 'in_progress', name: '설치진행중', color: 'blue', icon: 'fa-tools' },
+            { id: 'testing', name: '테스트중', color: 'purple', icon: 'fa-vial' },
+            { id: 'completed', name: '설치완료', color: 'green', icon: 'fa-check-circle' },
+            { id: 'failed', name: '설치실패', color: 'red', icon: 'fa-times-circle' }
+        ];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkSession();
+            await loadData();
+            renderKanban();
+        });
+
+        async function checkSession() {
+            try {
+                await axios.get('/api/auth/session');
+            } catch (error) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/';
+            }
+        }
+
+        async function loadData() {
+            showLoading();
+            try {
+                const response = await axios.get('/api/installations');
+                data = response.data;
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                alert('데이터를 불러오는데 실패했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function renderKanban() {
+            const container = document.getElementById('kanbanContainer');
+            container.innerHTML = '';
+            STATUSES.forEach(status => {
+                const column = createColumn(status);
+                container.appendChild(column);
+            });
+        }
+
+        function createColumn(status) {
+            const column = document.createElement('div');
+            column.className = 'kanban-column';
+            const items = data[status.id] || [];
+            column.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fas ${status.icon} text-${status.color}-500"></i>
+                        <h3 class="font-bold text-gray-800">${status.name}</h3>
+                    </div>
+                    <span class="bg-${status.color}-100 text-${status.color}-700 px-3 py-1 rounded-full text-sm font-bold">${items.length}</span>
+                </div>
+                <div class="kanban-cards">
+                    ${items.map(item => `
+                        <div class="kanban-card" onclick="alert('상세보기 ID: ${item.id}')">
+                            <h4 class="font-bold text-gray-800">${item.customer_name || '고객명 없음'}</h4>
+                            <p class="text-sm text-gray-600"><i class="fas fa-calendar mr-1"></i>${formatDate(item.installation_date)}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            return column;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+        async function refreshData() { await loadData(); renderKanban(); }
+        function showLoading() { document.getElementById('loadingSpinner').classList.remove('hidden'); }
+        function hideLoading() { document.getElementById('loadingSpinner').classList.add('hidden'); }
+    </script>
+</body>
+</html>

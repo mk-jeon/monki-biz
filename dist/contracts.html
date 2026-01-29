@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>계약현황 - MONKi Biz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .kanban-column { min-width: 300px; max-width: 350px; background: #f8f9fa; border-radius: 12px; padding: 16px; transition: all 0.3s ease; }
+        .kanban-column:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .kanban-card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: grab; transition: all 0.3s ease; border-left: 4px solid #8b5cf6; }
+        .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+        .kanban-card:active { cursor: grabbing; }
+        .kanban-card.dragging { opacity: 0.5; }
+        .kanban-container { display: flex; gap: 20px; overflow-x: auto; padding: 20px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; animation: fadeIn 0.3s ease; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 16px; padding: 32px; max-width: 800px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #8b5cf6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div class="max-w-full mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-file-contract mr-2 text-purple-500"></i> 계약현황
+                    </h1>
+                    <p class="text-sm text-gray-500 mt-1">고객 계약 진행 및 관리</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="openNewModal()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-plus"></i> 신규 계약 등록
+                    </button>
+                    <button onclick="refreshData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button onclick="window.location.href='/dashboard'" class="text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-home text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="kanbanContainer" class="kanban-container"></div>
+    <div id="loadingSpinner" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        let data = [];
+        let currentUser = null;
+        const STATUSES = [
+            { id: 'waiting', name: '계약대기', color: 'yellow', icon: 'fa-hourglass-half' },
+            { id: 'in_progress', name: '계약진행중', color: 'blue', icon: 'fa-file-signature' },
+            { id: 'signature_waiting', name: '서명대기', color: 'purple', icon: 'fa-pen' },
+            { id: 'completed', name: '계약완료', color: 'green', icon: 'fa-check-circle' },
+            { id: 'cancelled', name: '계약취소', color: 'red', icon: 'fa-times-circle' }
+        ];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkSession();
+            await loadData();
+            renderKanban();
+        });
+
+        async function checkSession() {
+            try {
+                const response = await axios.get('/api/auth/session');
+                currentUser = response.data.user;
+            } catch (error) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/';
+            }
+        }
+
+        async function loadData() {
+            showLoading();
+            try {
+                const response = await axios.get('/api/contracts');
+                data = response.data;
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                alert('데이터를 불러오는데 실패했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function renderKanban() {
+            const container = document.getElementById('kanbanContainer');
+            container.innerHTML = '';
+            STATUSES.forEach(status => {
+                const column = createColumn(status);
+                container.appendChild(column);
+            });
+        }
+
+        function createColumn(status) {
+            const column = document.createElement('div');
+            column.className = 'kanban-column';
+            column.dataset.status = status.id;
+            const items = data[status.id] || [];
+            
+            column.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fas ${status.icon} text-${status.color}-500"></i>
+                        <h3 class="font-bold text-gray-800">${status.name}</h3>
+                    </div>
+                    <span class="bg-${status.color}-100 text-${status.color}-700 px-3 py-1 rounded-full text-sm font-bold">${items.length}</span>
+                </div>
+                <div class="kanban-cards" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                    ${items.map(item => createCard(item)).join('')}
+                </div>
+            `;
+            return column;
+        }
+
+        function createCard(item) {
+            return `
+                <div class="kanban-card" draggable="true" data-id="${item.id}" ondragstart="handleDragStart(event)" ondragend="handleDragEnd(event)" onclick="openDetailModal(${item.id})">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-bold text-gray-800">${item.customer_name || '고객명 없음'}</h4>
+                        <span class="text-xs text-gray-500">${formatDate(item.created_at)}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2"><i class="fas fa-file-contract mr-1"></i>${item.contract_number || '-'}</p>
+                    <p class="text-sm text-gray-600 mb-2"><i class="fas fa-phone mr-1"></i>${item.phone || '-'}</p>
+                    <div class="flex items-center justify-between mt-3 pt-3 border-t">
+                        <span class="text-xs bg-gray-100 px-2 py-1 rounded">${item.franchise_name || '-'}</span>
+                        <span class="text-xs text-gray-500">${item.region || '-'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        let draggedElement = null;
+        function handleDragStart(event) { draggedElement = event.target; event.target.classList.add('dragging'); }
+        function handleDragEnd(event) { event.target.classList.remove('dragging'); }
+        function handleDragOver(event) { event.preventDefault(); }
+        async function handleDrop(event) {
+            event.preventDefault();
+            if (!draggedElement) return;
+            const targetColumn = event.target.closest('.kanban-column');
+            if (!targetColumn) return;
+            const newStatus = targetColumn.dataset.status;
+            const itemId = draggedElement.dataset.id;
+            try {
+                await axios.put(`/api/contracts/${itemId}/status`, { status: newStatus });
+                await loadData();
+                renderKanban();
+            } catch (error) {
+                console.error('상태 변경 실패:', error);
+                alert('상태 변경에 실패했습니다.');
+            }
+            draggedElement = null;
+        }
+
+        function openNewModal() { alert('신규 계약 등록 기능은 상담현황에서 이관하여 생성됩니다.'); }
+        function openDetailModal(id) { alert(`상세보기 ID: ${id} - 상세 모달 구현 중`); }
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+        async function refreshData() { await loadData(); renderKanban(); }
+        function showLoading() { document.getElementById('loadingSpinner').classList.remove('hidden'); }
+        function hideLoading() { document.getElementById('loadingSpinner').classList.add('hidden'); }
+    </script>
+</body>
+</html>
