@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "webapp",
+  "name": "monki-biz",
   "compatibility_date": "2026-01-28",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
@@ -10,7 +10,7 @@
     {
       "binding": "DB",
       "database_name": "monki-biz-production",
-      "database_id": "local-db-for-development"
+      "database_id": "61427631-454f-4b3c-9354-47f6e077e844"
     }
   ]
 }

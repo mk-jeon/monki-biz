@@ -4,22 +4,24 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { serveStatic } from 'hono/cloudflare-workers';
 import { Env } from './types';
 import authRoutes from './routes/auth';
 import consultationsRoutes from './routes/consultations';
+import contractsRoutes from './routes/contracts';
+import installationsRoutes from './routes/installations';
+import franchisesRoutes from './routes/franchises';
 
 const app = new Hono<{ Bindings: Env }>();
 
 // CORS 설정
 app.use('/api/*', cors());
 
-// 정적 파일 제공
-app.use('/static/*', serveStatic({ root: './public' }));
-
 // API 라우트
 app.route('/api/auth', authRoutes);
 app.route('/api/consultations', consultationsRoutes);
+app.route('/api/contracts', contractsRoutes);
+app.route('/api/installations', installationsRoutes);
+app.route('/api/franchises', franchisesRoutes);
 
 // 메인 페이지 - 로그인 화면
 app.get('/', (c) => {
@@ -534,22 +536,21 @@ app.get('/dashboard', (c) => {
                 e.preventDefault();
                 const page = item.dataset.page;
                 
-                // 활성 상태 변경
-                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
+                // 페이지별 라우팅
+                const routes = {
+                    'dashboard': '/dashboard',
+                    'consultation': '/consultations.html',
+                    'contract': '/contracts.html',
+                    'installation': '/installations.html',
+                    'operating': '/operating.html',
+                    'franchise': '/franchises.html',
+                    'stock': '/stock.html',
+                    'as': '/as.html'
+                };
 
-                // 페이지 타이틀 변경
-                const title = item.querySelector('.sidebar-text').textContent.trim();
-                document.getElementById('pageTitle').textContent = title;
-
-                // TODO: 페이지 컨텐츠 로드
-                document.getElementById('pageContent').innerHTML = \`
-                    <div class="fade-in text-center py-20">
-                        <i class="fas fa-construction text-6xl text-gray-300 mb-4"></i>
-                        <h3 class="text-2xl font-bold text-gray-700 mb-2">\${title} 페이지</h3>
-                        <p class="text-gray-500">곧 제공될 예정입니다.</p>
-                    </div>
-                \`;
+                if (routes[page]) {
+                    window.location.href = routes[page];
+                }
             });
         });
 
@@ -562,3 +563,4 @@ app.get('/dashboard', (c) => {
 });
 
 export default app;
+
