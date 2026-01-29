@@ -130,10 +130,6 @@ app.get('/', (c) => {
                 로그인
             </button>
         </form>
-
-        <div class="mt-6 text-center text-sm text-gray-600">
-            <p>기본 계정: <strong>admin</strong> / <strong>1234</strong></p>
-        </div>
     </div>
 
     <script>

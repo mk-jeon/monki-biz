@@ -2,9 +2,12 @@
 -- MONKi Biz - 초기 데이터 삽입
 -- ============================================================================
 
--- 기본 관리자 계정 생성 (비밀번호: 1234)
+-- 마스터 계정 생성 (최고 권한)
 INSERT OR IGNORE INTO users (user_id, password, name, email, department, role, is_active) VALUES 
-  ('admin', '1234', '시스템 관리자', 'admin@monkibiz.com', '기획', 'admin', 1),
+  ('minhiti88', 'Axieslin12!', '마스터 관리자', 'minhiti88@monkibiz.com', '경영', 'admin', 1);
+
+-- 기본 관리자 및 사용자 계정 생성
+INSERT OR IGNORE INTO users (user_id, password, name, email, department, role, is_active) VALUES 
   ('marketing01', '1234', '마케팅담당A', 'marketing@monkibiz.com', '마케팅', 'user', 1),
   ('sales01', '1234', '영업담당B', 'sales01@monkibiz.com', '영업', 'user', 1),
   ('sales02', '1234', '영업담당C', 'sales02@monkibiz.com', '영업', 'user', 1),
